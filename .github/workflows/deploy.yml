@@ -19,3 +19,14 @@ jobs:
 
       - name: Push to DockerHub
         run: docker push ${{ secrets.DOCKER_USERNAME }}/mon-pipeline:latest
+        
+      - name: Deploy to VM
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > key.pem
+          chmod 600 key.pem
+          ssh -o StrictHostKeyChecking=no -i key.pem ubuntu@${{ secrets.VM_IP }} "
+            sudo docker pull ${{ secrets.DOCKER_USERNAME }}/mon-pipeline:latest &&
+            sudo docker stop app || true &&
+            sudo docker rm app || true &&
+            sudo docker run -d --name app -p 80:10000 ${{ secrets.DOCKER_USERNAME }}/mon-pipeline:latest
+          "
